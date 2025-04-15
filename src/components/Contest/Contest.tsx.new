@@ -1,0 +1,258 @@
+import React, { useState } from 'react';
+import {
+  Button,
+  TextField,
+  Grid,
+  Paper,
+  Typography,
+  IconButton,
+  Box,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import './Contest.css';
+
+interface TestCase {
+  input: string;
+  output: string;
+  isHidden: boolean;
+}
+
+interface Problem {
+  title: string;
+  description: string;
+  testCases: TestCase[];
+}
+
+interface Contest {
+  title: string;
+  description: string;
+  problems: Problem[];
+}
+
+const Contest: React.FC = () => {
+  const [contest, setContest] = useState<Contest>({
+    title: '',
+    description: '',
+    problems: [],
+  });
+
+  const addProblem = () => {
+    setContest({
+      ...contest,
+      problems: [
+        ...contest.problems,
+        {
+          title: '',
+          description: '',
+          testCases: [],
+        },
+      ],
+    });
+  };
+
+  const removeProblem = (index: number) => {
+    const newProblems = [...contest.problems];
+    newProblems.splice(index, 1);
+    setContest({ ...contest, problems: newProblems });
+  };
+
+  const addTestCase = (problemIndex: number) => {
+    const newProblems = [...contest.problems];
+    newProblems[problemIndex].testCases.push({
+      input: '',
+      output: '',
+      isHidden: false,
+    });
+    setContest({ ...contest, problems: newProblems });
+  };
+
+  const removeTestCase = (problemIndex: number, testCaseIndex: number) => {
+    const newProblems = [...contest.problems];
+    newProblems[problemIndex].testCases.splice(testCaseIndex, 1);
+    setContest({ ...contest, problems: newProblems });
+  };
+
+  const handleProblemChange = (
+    index: number,
+    field: keyof Problem,
+    value: string
+  ) => {
+    const newProblems = [...contest.problems];
+    newProblems[index] = { ...newProblems[index], [field]: value };
+    setContest({ ...contest, problems: newProblems });
+  };
+
+  const handleTestCaseChange = (
+    problemIndex: number,
+    testCaseIndex: number,
+    field: keyof TestCase,
+    value: string | boolean
+  ) => {
+    const newProblems = [...contest.problems];
+    newProblems[problemIndex].testCases[testCaseIndex] = {
+      ...newProblems[problemIndex].testCases[testCaseIndex],
+      [field]: value,
+    };
+    setContest({ ...contest, problems: newProblems });
+  };
+
+  const handleRunContest = () => {
+    // This would open the code editor with the contest problems
+    console.log('Running contest:', contest);
+  };
+
+  return (
+    <div className="contest-container">
+      <Typography variant="h4" gutterBottom>
+        Create Custom Contest
+      </Typography>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Contest Title"
+            value={contest.title}
+            onChange={(e) =>
+              setContest({ ...contest, title: e.target.value })
+            }
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Contest Description"
+            value={contest.description}
+            onChange={(e) =>
+              setContest({ ...contest, description: e.target.value })
+            }
+          />
+        </Grid>
+        {contest.problems.map((problem, problemIndex) => (
+          <Grid item xs={12} key={problemIndex}>
+            <Paper className="problem-paper">
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6">
+                  Problem {problemIndex + 1}
+                </Typography>
+                <IconButton
+                  onClick={() => removeProblem(problemIndex)}
+                  color="error"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+              <TextField
+                fullWidth
+                label="Problem Title"
+                value={problem.title}
+                onChange={(e) =>
+                  handleProblemChange(problemIndex, 'title', e.target.value)
+                }
+                margin="normal"
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                label="Problem Description"
+                value={problem.description}
+                onChange={(e) =>
+                  handleProblemChange(problemIndex, 'description', e.target.value)
+                }
+                margin="normal"
+              />
+              <Typography variant="subtitle1" gutterBottom>
+                Test Cases
+              </Typography>
+              {problem.testCases.map((testCase, testCaseIndex) => (
+                <Paper key={testCaseIndex} className="test-case-paper">
+                  <Grid container spacing={2}>
+                    <Grid item xs={5}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={2}
+                        label="Input"
+                        value={testCase.input}
+                        onChange={(e) =>
+                          handleTestCaseChange(
+                            problemIndex,
+                            testCaseIndex,
+                            'input',
+                            e.target.value
+                          )
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={5}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={2}
+                        label="Output"
+                        value={testCase.output}
+                        onChange={(e) =>
+                          handleTestCaseChange(
+                            problemIndex,
+                            testCaseIndex,
+                            'output',
+                            e.target.value
+                          )
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={2}>
+                      <Box display="flex" alignItems="center" height="100%">
+                        <IconButton
+                          onClick={() =>
+                            removeTestCase(problemIndex, testCaseIndex)
+                          }
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              ))}
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => addTestCase(problemIndex)}
+                className="add-test-case-button"
+              >
+                Add Test Case
+              </Button>
+            </Paper>
+          </Grid>
+        ))}
+        <Grid item xs={12}>
+          <Button
+            startIcon={<AddIcon />}
+            onClick={addProblem}
+            disabled={contest.problems.length >= 10}
+            className="add-problem-button"
+          >
+            Add Problem
+          </Button>
+        </Grid>
+        <Grid item xs={12}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleRunContest}
+            disabled={contest.problems.length === 0}
+            className="run-contest-button"
+          >
+            Run Contest
+          </Button>
+        </Grid>
+      </Grid>
+    </div>
+  );
+};
+
+export default Contest; 

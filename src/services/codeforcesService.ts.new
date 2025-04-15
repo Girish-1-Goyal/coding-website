@@ -1,0 +1,124 @@
+interface Problem {
+  contestId: number;
+  problemsetName: string;
+  index: string;
+  name: string;
+  type: string;
+  rating: number;
+  tags: string[];
+  points?: number;
+}
+
+interface ProblemResult {
+  id: string;
+  name: string;
+  rating: number;
+  tags: string[];
+  description: string;
+  input: string;
+  output: string;
+  testCases: {
+    input: string;
+    output: string;
+  }[];
+}
+
+export async function fetchProblemsFromCodeforces(): Promise<ProblemResult[]> {
+  try {
+    console.log('Fetching problems from Codeforces...');
+    const response = await fetch('https://codeforces.com/api/problemset.problems');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('API Response:', data);
+    
+    if (data.status !== 'OK') {
+      throw new Error(`API Error: ${data.comment || 'Unknown error'}`);
+    }
+
+    // Get problems with ratings between 800 and 1500
+    const problemsWithRatings = data.result.problems
+      .filter((problem: Problem) => 
+        problem.rating && 
+        problem.rating >= 800 && 
+        problem.rating <= 1500
+      )
+      .slice(0, 50); // Limit to 50 problems for now
+
+    console.log('Filtered problems:', problemsWithRatings);
+
+    // Transform problems into our format
+    return problemsWithRatings.map((problem: Problem) => ({
+      id: `${problem.contestId}${problem.index}`,
+      name: problem.name,
+      rating: problem.rating,
+      tags: problem.tags,
+      description: `${problem.name}\n\nFrom Codeforces Round #${problem.contestId}\n\n` +
+                  `This is a ${problem.rating} rated problem that tests your knowledge of: ${problem.tags.join(', ')}.`,
+      input: 'Input format:\n- First line contains an integer n (1 ≤ n ≤ 10^5)\n- Second line contains n space-separated integers',
+      output: 'Output a single integer - the answer to the problem.',
+      testCases: [
+        {
+          input: '5\n1 2 3 4 5',
+          output: '15'
+        },
+        {
+          input: '3\n2 4 6',
+          output: '12'
+        }
+      ]
+    }));
+  } catch (error) {
+    console.error('Error in fetchProblemsFromCodeforces:', error);
+    return [];
+  }
+}
+
+export async function fetchProblemDetailsFromScraper(problemId: string): Promise<ProblemResult | null> {
+  try {
+    console.log('Fetching problem details for:', problemId);
+    const contestId = parseInt(problemId.slice(0, -1));
+    const index = problemId.slice(-1);
+
+    const response = await fetch(`https://codeforces.com/api/contest.standings?contestId=${contestId}&from=1&count=1`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Problem details response:', data);
+
+    if (data.status !== 'OK') {
+      throw new Error(`API Error: ${data.comment || 'Unknown error'}`);
+    }
+
+    const problem = data.result.problems.find((p: any) => p.index === index);
+    if (!problem) {
+      throw new Error('Problem not found');
+    }
+
+    return {
+      id: problemId,
+      name: problem.name,
+      rating: problem.rating,
+      tags: problem.tags,
+      description: `${problem.name}\n\nFrom Codeforces Round #${contestId}\n\n` +
+                  `This is a ${problem.rating} rated problem that tests your knowledge of: ${problem.tags.join(', ')}.`,
+      input: 'Input format will be available soon',
+      output: 'Output format will be available soon',
+      testCases: [
+        {
+          input: 'Sample input will be available soon',
+          output: 'Sample output will be available soon'
+        }
+      ]
+    };
+  } catch (error) {
+    console.error('Error in fetchProblemDetailsFromScraper:', error);
+    return null;
+  }
+} 
